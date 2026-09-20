@@ -1,18 +1,16 @@
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
-from sqlmodel import Session
 
 from app.api.cotacoes import router as cotacoes_router
 from app.api.orcamentos import router as orcamentos_router
-from app.infrastructure.database import create_db_and_tables, engine
-from app.infrastructure.write_model.seed import seed_voos
+from app.infrastructure.database import create_db_and_tables
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    with Session(engine) as session:
-        seed_voos(session)
+    # Cria as tabelas no banco de dados e já roda o seed internamente
+    create_db_and_tables()
     yield
 
 
