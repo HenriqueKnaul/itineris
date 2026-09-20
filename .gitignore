@@ -18,3 +18,7 @@ __pycache__/
 # IDEs e Editores
 .vscode/
 .idea/
+
+.pytest_cache/
+.coverage
+htmlcov/

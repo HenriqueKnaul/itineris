@@ -21,6 +21,6 @@ app.include_router(roteiro_router)
 #def home():
  #   return {"status": "Serviço de Roteiro e Banco de Dados operacionais!"}
 
-#@app.get("/health")
-#def health_check():
-#    return {"status": "healthy"}
+@app.get("/health")
+def health_check():
+    return {"status": "healthy"}

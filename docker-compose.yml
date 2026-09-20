@@ -1,9 +1,54 @@
 services:
+  gateway:
+    build: ./gateway
+    container_name: gateway
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./gateway:/app
+    environment:
+      # Dentro da rede do Compose, o host é o NOME do serviço (não localhost).
+      ROTEIRO_SERVICE_URL: http://roteiro-service:8002
+      COTACAO_SERVICE_URL: http://cotacao-service:8003
+      AUTH_SERVICE_URL: http://auth-service:8001
+      PYTHONUNBUFFERED: "1"
+    depends_on:
+      - roteiro-service
+      - cotacao-service
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
   roteiro-service:
     build: ./roteiro-service
     container_name: roteiro-service
+    # A porta só fica exposta para facilitar o debug e a apresentação;
+    # o acesso "oficial" da aplicação é sempre pelo gateway (8000).
     ports:
       - "8002:8002"
     volumes:
       - ./roteiro-service:/app
+    environment:
+      COTACAO_SERVICE_URL: http://cotacao-service:8003
+      PYTHONUNBUFFERED: "1"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8002 --reload
+
+  cotacao-service:
+    build: ./cotacao-service
+    container_name: cotacao-service
+    ports:
+      - "8003:8003"
+    volumes:
+      - ./cotacao-service:/app
+    environment:
+      PYTHONUNBUFFERED: "1"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
+
+  # Descomente quando o auth-service do grupo existir.
+  # O gateway já está preparado para rotear /auth/* para ele.
+  # auth-service:
+  #   build: ./auth-service
+  #   container_name: auth-service
+  #   ports:
+  #     - "8001:8001"
+  #   volumes:
+  #     - ./auth-service:/app
+  #   command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
