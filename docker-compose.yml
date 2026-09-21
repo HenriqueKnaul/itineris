@@ -42,13 +42,13 @@ services:
       PYTHONUNBUFFERED: "1"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8003 --reload
 
-  # Descomente quando o auth-service do grupo existir.
-  # O gateway já está preparado para rotear /auth/* para ele.
-  # auth-service:
-  #   build: ./auth-service
-  #   container_name: auth-service
-  #   ports:
-  #     - "8001:8001"
-  #   volumes:
-  #     - ./auth-service:/app
-  #   command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+  auth-service:
+    build: ./auth-service
+    container_name: auth-service
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./auth-service:/app
+    environment:
+      PYTHONUNBUFFERED: "1"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
