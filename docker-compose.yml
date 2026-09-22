@@ -11,10 +11,12 @@ services:
       ROTEIRO_SERVICE_URL: http://roteiro-service:8002
       COTACAO_SERVICE_URL: http://cotacao-service:8003
       AUTH_SERVICE_URL: http://auth-service:8001
+      SECRET_KEY: ${SECRET_KEY:-chave-padrao-apenas-para-desenvolvimento-trocar-em-producao}
       PYTHONUNBUFFERED: "1"
     depends_on:
       - roteiro-service
       - cotacao-service
+      - auth-service
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   roteiro-service:
@@ -50,5 +52,6 @@ services:
     volumes:
       - ./auth-service:/app
     environment:
+      SECRET_KEY: ${SECRET_KEY:-chave-padrao-apenas-para-desenvolvimento-trocar-em-producao}
       PYTHONUNBUFFERED: "1"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload

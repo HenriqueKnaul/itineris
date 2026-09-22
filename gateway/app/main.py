@@ -17,9 +17,15 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
+from app.core import seguranca
 from app.middlewares.correlacao import CorrelacaoMiddleware
 from app.routing import proxy
 from app.routing.rotas import MAPA_DE_ROTAS, SERVICOS, Servico, resolver
+
+# Prefixos que não exigem token: o login precisa ser acessível sem estar
+# autenticado ainda. Todo o resto (roteiros, destinos, cotações, orçamentos)
+# passa pela validação do JWT antes de ser encaminhado ao microsserviço.
+PREFIXOS_PUBLICOS = {"auth"}
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
@@ -91,6 +97,29 @@ async def health_servicos(request: Request):
     )
 
 
+def _autenticar(request: Request) -> JSONResponse | None:
+    """Confere o header Authorization. Devolve uma resposta 401 se algo estiver errado, senão None."""
+    cabecalho = request.headers.get("authorization", "")
+    if not cabecalho.lower().startswith("bearer "):
+        return JSONResponse(
+            status_code=401,
+            content={
+                "erro": "nao_autenticado",
+                "mensagem": "Cabeçalho Authorization ausente. Use 'Authorization: Bearer <token>'.",
+            },
+        )
+
+    token = cabecalho[len("bearer ") :].strip()
+    try:
+        seguranca.validar_token(token)
+    except seguranca.TokenInvalido as erro:
+        return JSONResponse(
+            status_code=401,
+            content={"erro": "token_invalido", "mensagem": str(erro)},
+        )
+    return None
+
+
 # --- Catch-all: tudo que não for do gateway vira proxy ----------------------
 @app.api_route("/{caminho:path}", methods=METODOS, include_in_schema=False)
 async def encaminhar(caminho: str, request: Request) -> Response:
@@ -104,4 +133,11 @@ async def encaminhar(caminho: str, request: Request) -> Response:
                 "rotas_disponiveis": sorted(f"/{p}" for p in MAPA_DE_ROTAS),
             },
         )
+
+    prefixo = caminho.strip("/").split("/", 1)[0].lower()
+    if prefixo not in PREFIXOS_PUBLICOS:
+        resposta_de_erro = _autenticar(request)
+        if resposta_de_erro is not None:
+            return resposta_de_erro
+
     return await proxy.encaminhar(request, caminho, servico, request.app.state.cliente)

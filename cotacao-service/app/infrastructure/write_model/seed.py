@@ -15,6 +15,17 @@ VOOS_INICIAIS = [
     ("Roma", ORIGEM_PADRAO, 4700.00, 150, 60),
     ("Buenos Aires", ORIGEM_PADRAO, 1200.00, 120, 90),
     ("Tóquio", ORIGEM_PADRAO, 9800.00, 100, 40),
+    # Rotas a partir/para Buenos Aires: sem elas, um roteiro que passa por lá
+    # a caminho de outro destino (ex.: Buenos Aires -> Roma) ficava sem
+    # opção de voo e a reserva era sempre rejeitada por "voo_nao_encontrado".
+    ("Buenos Aires", "Lisboa", 2200.00, 140, 110),
+    ("Lisboa", "Buenos Aires", 2200.00, 140, 110),
+    ("Buenos Aires", "Paris", 2600.00, 140, 100),
+    ("Paris", "Buenos Aires", 2600.00, 140, 100),
+    ("Buenos Aires", "Roma", 2700.00, 130, 90),
+    ("Roma", "Buenos Aires", 2700.00, 130, 90),
+    ("Buenos Aires", "Tóquio", 6200.00, 100, 40),
+    ("Tóquio", "Buenos Aires", 6200.00, 100, 40),
 ]
 
 def seed_voos(session: Session) -> int:

@@ -2,6 +2,12 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session, select
 from app.infrastructure.database import get_session
+from app.infrastructure.cotacao_client import (
+    FalhaDeComunicacao,
+    ReservaRejeitada,
+    cancelar_passagens,
+    reservar_passagens,
+)
 from app.domain.models import Roteiro, Destino, RoteiroBase, DestinoBase
 
 router = APIRouter(prefix="/roteiros", tags=["Roteiros"])
@@ -81,3 +87,133 @@ def deletar_roteiro(roteiro_id: int, session: Session = Depends(get_session)):
     session.delete(roteiro)
     session.commit()
     return None
+
+
+# --- Saga de reserva (orquestrada pelo roteiro-service) ---------------------
+#
+# Passo local  1: valida o roteiro e seu estado atual.
+# Passo remoto 2: pede ao cotacao-service que reserve as passagens.
+# Passo local  3: confirma o roteiro como RESERVADO (só se o passo 2 aprovou).
+#
+# Não há compensação a fazer no caso "rejeitado": o cotacao-service não grava
+# nada quando rejeita (é tudo ou nada, ver app/application/commands/
+# reservar_roteiro.py do cotacao-service). A compensação existe para quando o
+# usuário desiste de um roteiro JÁ reservado: ver /roteiros/{id}/cancelar-reserva.
+@router.post("/{roteiro_id}/reservar", tags=["Roteiros", "Saga"])
+async def reservar(roteiro_id: int, session: Session = Depends(get_session)):
+    """Aciona a reserva das passagens do roteiro junto ao cotacao-service."""
+    roteiro = session.get(Roteiro, roteiro_id)
+    if not roteiro:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Roteiro não encontrado")
+
+    if roteiro.status == "RESERVADO":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Este roteiro já está reservado.",
+        )
+    if not roteiro.destinos:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="O roteiro não tem destinos para reservar.",
+        )
+
+    destinos_payload = [
+        {
+            "cidade": destino.cidade,
+            "data_chegada": destino.data_chegada,
+            "data_partida": destino.data_partida,
+        }
+        for destino in sorted(roteiro.destinos, key=lambda d: d.ordem)
+    ]
+
+    try:
+        resultado = await reservar_passagens(
+            roteiro_id=roteiro.id,
+            teto_financeiro=roteiro.orcamento_teto,
+            destinos=destinos_payload,
+        )
+    except FalhaDeComunicacao as erro:
+        # O serviço de cotação está fora do ar ou não respondeu a tempo.
+        # Nada foi alterado no roteiro: ele continua no estado anterior.
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(erro))
+
+    if isinstance(resultado, ReservaRejeitada):
+        # Rejeição de NEGÓCIO (sem saldo, sem vagas, voo inexistente):
+        # o roteiro permanece como estava, o motivo vai para o cliente em 422.
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=resultado.model_dump(),
+        )
+
+    # Aprovado: confirma o passo local que faltava. Se o commit falhar aqui,
+    # o cotacao-service já reservou e cobrou as passagens — sem a compensação
+    # abaixo, o roteiro ficaria "RASCUNHO" enquanto o dinheiro/vagas já
+    # teriam sido consumidos do outro lado, uma inconsistência entre os dois
+    # bancos que a Saga existe justamente para evitar.
+    roteiro.status = "RESERVADO"
+    session.add(roteiro)
+    try:
+        session.commit()
+    except Exception as erro_local:
+        session.rollback()
+        try:
+            await cancelar_passagens(roteiro.id)
+        except FalhaDeComunicacao as erro_compensacao:
+            # Pior caso: nem o commit local nem a compensação remota deram
+            # certo. O roteiro continua "RASCUNHO" no nosso banco, mas o
+            # cotacao-service acha que está tudo reservado — fica registrado
+            # no detalhe do erro para reconciliação manual/observabilidade.
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=(
+                    "Falha ao confirmar o roteiro após a reserva ter sido aprovada, e a "
+                    "compensação automática também falhou. É necessário reconciliar "
+                    f"manualmente o roteiro {roteiro.id} no cotacao-service. "
+                    f"Erro local: {erro_local}. Erro da compensação: {erro_compensacao}"
+                ),
+            ) from erro_compensacao
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=(
+                "Não foi possível confirmar o roteiro após a reserva aprovada; a reserva "
+                f"foi automaticamente cancelada (compensação da Saga). Erro original: {erro_local}"
+            ),
+        ) from erro_local
+
+    session.refresh(roteiro)
+
+    return {
+        "roteiro_id": roteiro.id,
+        "status_roteiro": roteiro.status,
+        **resultado.model_dump(),
+    }
+
+
+@router.post("/{roteiro_id}/cancelar-reserva", tags=["Roteiros", "Saga"])
+async def cancelar_reserva(roteiro_id: int, session: Session = Depends(get_session)):
+    """Compensação da Saga: desfaz a reserva de um roteiro já RESERVADO."""
+    roteiro = session.get(Roteiro, roteiro_id)
+    if not roteiro:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Roteiro não encontrado")
+
+    if roteiro.status != "RESERVADO":
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Este roteiro não está reservado; não há o que cancelar.",
+        )
+
+    try:
+        total_cancelado = await cancelar_passagens(roteiro.id)
+    except FalhaDeComunicacao as erro:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(erro))
+
+    roteiro.status = "CANCELADO"
+    session.add(roteiro)
+    session.commit()
+    session.refresh(roteiro)
+
+    return {
+        "roteiro_id": roteiro.id,
+        "status_roteiro": roteiro.status,
+        "reservas_canceladas": total_cancelado,
+    }

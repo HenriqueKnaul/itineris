@@ -9,7 +9,8 @@ from app.infrastructure.database import create_db_and_tables
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Cria as tabelas no banco de dados e já roda o seed internamente
+    # create_db_and_tables() cria o schema e já popula os voos iniciais
+    # (seed_voos é idempotente: não duplica se rodar de novo).
     create_db_and_tables()
     yield
 

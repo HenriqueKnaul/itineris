@@ -47,8 +47,8 @@ MAPA_DE_ROTAS: dict[str, Servico] = {
     "auth": AUTH_SERVICE,
 }
 
-# Serviços usados pelo health check agregado (sem repetir o auth três vezes).
-SERVICOS: list[Servico] = [ROTEIRO_SERVICE, COTACAO_SERVICE]
+# Serviços usados pelo health check agregado.
+SERVICOS: list[Servico] = [ROTEIRO_SERVICE, COTACAO_SERVICE, AUTH_SERVICE]
 
 
 def resolver(caminho: str) -> Servico | None:
