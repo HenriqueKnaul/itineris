@@ -1,6 +1,6 @@
 from sqlmodel import Session, select
-from app.domain.constantes import ORIGEM_PADRAO
-from app.domain.models import Voo
+from app.regras import ORIGEM_PADRAO
+from app.models import Voo
 
 VOOS_INICIAIS = [
     (ORIGEM_PADRAO, "Lisboa", 3800.00, 180, 150),

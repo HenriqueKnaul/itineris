@@ -2,9 +2,9 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.cotacoes import router as cotacoes_router
-from app.api.orcamentos import router as orcamentos_router
-from app.infrastructure.database import create_db_and_tables
+from app.database import create_db_and_tables
+from app.escrita import router as escrita_router
+from app.leitura import router as leitura_router
 
 
 @asynccontextmanager
@@ -15,15 +15,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Serviço de Cotação - Itineris",
-    description=(
-        "Microsserviço responsável pelo orçamento e pela reserva de passagens "
-        "(CQRS: comandos e consultas separados)."
-    ),
+    description="Orçamento e reserva de passagens (CQRS: escrita.py e leitura.py).",
     lifespan=lifespan,
 )
 
-app.include_router(cotacoes_router)
-app.include_router(orcamentos_router)
+app.include_router(escrita_router)
+app.include_router(leitura_router)
 
 
 @app.get("/health", tags=["Infra"])

@@ -1,8 +1,8 @@
 """Testes da carga inicial do catálogo."""
 from sqlmodel import select
 
-from app.domain.models import Voo
-from app.infrastructure.write_model.seed import VOOS_INICIAIS, seed_voos
+from app.models import Voo
+from app.seed import VOOS_INICIAIS, seed_voos
 
 
 def test_seed_insere_o_catalogo_completo(session):

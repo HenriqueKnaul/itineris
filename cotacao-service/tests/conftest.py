@@ -6,21 +6,16 @@ from fastapi.testclient import TestClient
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, SQLModel, create_engine
 
-from app.application.commands.reservar_roteiro import ReservarRoteiroCommand
-from app.domain.models import Voo
-from app.domain.regras import DestinoRoteiro
-from app.infrastructure.database import get_session
+from app.database import get_session
 from app.main import app
+from app.models import Voo
+from app.schemas import DestinoIn, ReservarRequest
 
 
 @pytest.fixture
 def session():
     """Banco novo (em memória) para cada teste: nada vaza entre testes."""
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    engine = create_engine("sqlite://", connect_args={"check_same_thread": False}, poolclass=StaticPool)
     SQLModel.metadata.create_all(engine)
     with Session(engine) as sessao:
         yield sessao
@@ -59,16 +54,16 @@ def catalogo(session):
 
 
 @pytest.fixture
-def novo_comando():
-    """Fábrica de comandos de reserva com datas distantes (dez/2026)."""
+def novo_pedido():
+    """Fábrica de pedidos de reserva com datas distantes (dez/2026)."""
 
     def _criar(roteiro_id=1, teto=3000.0, cidades=("Lisboa", "Paris")):
         destinos = []
         inicio = date(2026, 12, 10)
         for i, cidade in enumerate(cidades):
             chegada = inicio + timedelta(days=5 * i)
-            destinos.append(DestinoRoteiro(cidade, chegada, chegada + timedelta(days=5)))
-        return ReservarRoteiroCommand(roteiro_id=roteiro_id, teto_financeiro=teto, destinos=destinos)
+            destinos.append(DestinoIn(cidade=cidade, data_chegada=chegada, data_partida=chegada + timedelta(days=5)))
+        return ReservarRequest(roteiro_id=roteiro_id, teto_financeiro=teto, destinos=destinos)
 
     return _criar
 
