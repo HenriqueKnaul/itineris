@@ -2,8 +2,8 @@ import hmac
 import os
 from datetime import datetime, timedelta, timezone
 
-from fastapi import FastAPI, HTTPException
-from jose import jwt
+from fastapi import FastAPI, Header, HTTPException
+from jose import JWTError, jwt
 from pydantic import BaseModel
 
 # Mesma chave usada pelo gateway para validar o token (ver .env.example).
@@ -43,3 +43,18 @@ def login(dados: LoginIn):
     exp = datetime.now(timezone.utc) + timedelta(minutes=EXPIRACAO_MINUTOS)
     token = jwt.encode({"sub": dados.id, "nome": usuario["nome"], "exp": exp}, SECRET_KEY, algorithm=ALGORITHM)
     return {"access_token": token}
+
+
+@app.get("/auth/validar")
+def validar(authorization: str = Header(default="")):
+    """Usado pelo gateway (nginx) antes de liberar qualquer rota protegida.
+
+    200 = token válido, 401 = ausente, inválido ou expirado.
+    """
+    if not authorization.lower().startswith("bearer "):
+        raise HTTPException(status_code=401, detail="Token ausente.")
+    try:
+        claims = jwt.decode(authorization[7:].strip(), SECRET_KEY, algorithms=[ALGORITHM])
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
+    return {"usuario": claims["sub"]}

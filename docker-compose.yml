@@ -1,23 +1,16 @@
 services:
   gateway:
-    build: ./gateway
+    # Nginx como API Gateway: a configuração inteira está em gateway/nginx.conf
+    image: nginx:1.27-alpine
     container_name: gateway
     ports:
-      - "8000:8000"
+      - "8000:80"
     volumes:
-      - ./gateway:/app
-    environment:
-      # Dentro da rede do Compose, o host é o NOME do serviço (não localhost).
-      ROTEIRO_SERVICE_URL: http://roteiro-service:8002
-      COTACAO_SERVICE_URL: http://cotacao-service:8003
-      AUTH_SERVICE_URL: http://auth-service:8001
-      SECRET_KEY: ${SECRET_KEY:-chave-padrao-apenas-para-desenvolvimento-trocar-em-producao}
-      PYTHONUNBUFFERED: "1"
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - roteiro-service
       - cotacao-service
       - auth-service
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   roteiro-service:
     build: ./roteiro-service
