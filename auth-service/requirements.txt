@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+python-jose[cryptography]
+pytest
+pytest-cov
+httpx

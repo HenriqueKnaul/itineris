@@ -1,21 +1,33 @@
-"""Testes do auth-service.
+from fastapi.testclient import TestClient
+from jose import jwt
 
-Cobertura deliberadamente parcial: por enquanto so o health check tem
-teste. O fluxo de login (app/api/auth.py) e o hashing/JWT
-(app/core/security.py) ainda nao tem testes automatizados.
-"""
+from app.main import ALGORITHM, SECRET_KEY, app
 
-def test_status_check():
-    response = client.get("/health")
-    assert response.status_code == 200
-    assert response.json() == {"status": "healthy", "service": "auth-service"}
+client = TestClient(app)
+
+
+def test_health():
+    r = client.get("/health")
+    assert r.status_code == 200
+    assert r.json() == {"status": "healthy", "service": "auth-service"}
+
 
 def test_login_sucesso():
-    response = client.post("/auth/login", json={"id": "admin", "password": "admin"})
-    assert response.status_code == 200
-    assert "access_token" in response.json()
+    r = client.post("/auth/login", json={"id": "admin", "password": "admin"})
+    assert r.status_code == 200
+    corpo = r.json()
+    assert corpo["token_type"] == "bearer"
+    # o gateway valida com a mesma chave, então o token tem que abrir com ela
+    claims = jwt.decode(corpo["access_token"], SECRET_KEY, algorithms=[ALGORITHM])
+    assert claims["sub"] == "admin"
 
-def test_login_alha():
-    response = client.post("/auth/login", json={"id": "admin1", "password": "admin1"})
-    assert response.status_code == 401 #verifica se deu erro 
-    assert "access_token" in response.json()
+
+def test_login_senha_errada():
+    r = client.post("/auth/login", json={"id": "admin", "password": "errada"})
+    assert r.status_code == 401
+    assert "access_token" not in r.json()
+
+
+def test_login_usuario_inexistente():
+    r = client.post("/auth/login", json={"id": "fulano", "password": "admin"})
+    assert r.status_code == 401
