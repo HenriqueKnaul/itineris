@@ -12,7 +12,12 @@ def create_db_and_tables():
     criar_admin_padrao()
 
 def get_session():
-    """Sessão de banco por requisição (dependência do FastAPI)."""
+    """Gera uma sessão de banco de dados por requisição (dependência do FastAPI).
+
+    Faltava esta função — app/api/auth.py já importava `get_session`, mas ela
+    nunca tinha sido definida aqui, então o serviço quebrava com ImportError
+    assim que alguém tentasse subir ou importar o módulo.
+    """
     with Session(engine) as session:
         yield session
 
