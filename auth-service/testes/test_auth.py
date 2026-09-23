@@ -5,9 +5,17 @@ teste. O fluxo de login (app/api/auth.py) e o hashing/JWT
 (app/core/security.py) ainda nao tem testes automatizados.
 """
 
+def test_status_check():
+    response = client.get("/health")
+    assert response.status_code == 200
+    assert response.json() == {"status": "healthy", "service": "auth-service"}
 
-def test_health_check(client_sem_bd):
-    resposta = client_sem_bd.get("/health")
+def test_login_sucesso():
+    response = client.post("/auth/login", json={"id": "admin", "password": "admin"})
+    assert response.status_code == 200
+    assert "access_token" in response.json()
 
-    assert resposta.status_code == 200
-    assert resposta.json() == {"status": "healthy", "service": "auth-service"}
+def test_login_alha():
+    response = client.post("/auth/login", json={"id": "admin1", "password": "admin1"})
+    assert response.status_code == 401 #verifica se deu erro 
+    assert "access_token" in response.json()
