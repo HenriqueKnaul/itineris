@@ -3,3 +3,5 @@ uvicorn
 pydantic
 httpx
 sqlmodel
+pytest
+pytest-cov
