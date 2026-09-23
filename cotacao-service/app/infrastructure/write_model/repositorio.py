@@ -7,8 +7,6 @@ from app.domain.models import Orcamento, Reserva, StatusReserva, Voo
 
 
 def listar_voos(session: Session) -> list[Voo]:
-    # O catálogo é pequeno e fictício; carregá-lo inteiro permite comparar
-    # nomes de cidade normalizados (sem acento/caixa) em Python.
     return list(session.exec(select(Voo)).all())
 
 

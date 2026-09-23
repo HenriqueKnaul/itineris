@@ -1,9 +1,4 @@
-"""Rejeições de negócio do Cotação Service.
-
-São situações esperadas (não são bugs): a camada de API as converte em
-`{"status": "rejeitado", "motivo": ...}` com HTTP 200, conforme o contrato
-combinado com o roteiro-service.
-"""
+"""Rejeições de negócio do Cotação Service (não são bugs, viram HTTP 200 com status "rejeitado")."""
 from typing import Sequence
 
 from app.domain.regras import Trecho, TrechoCotado, calcular_faltante

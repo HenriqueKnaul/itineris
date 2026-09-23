@@ -55,7 +55,7 @@ def reservar_roteiro(
 ) -> ResultadoReserva:
     hoje = hoje or date.today()
 
-    # Idempotência: a Saga pode repetir a chamada; não cobra duas vezes.
+    # idempotência: a Saga pode repetir a chamada
     ja_reservadas = repositorio.listar_reservas_confirmadas(session, comando.roteiro_id)
     if ja_reservadas:
         return _resultado_ja_existente(session, comando.roteiro_id, ja_reservadas)
@@ -66,7 +66,6 @@ def reservar_roteiro(
         for v in repositorio.listar_voos(session)
     }
 
-    # Passo 1: todos os trechos existem no catálogo?
     voos = []
     for trecho in trechos:
         voo = catalogo.get((normalizar_nome(trecho.origem), normalizar_nome(trecho.destino)))
@@ -74,13 +73,12 @@ def reservar_roteiro(
             raise VooNaoEncontrado(trecho)
         voos.append(voo)
 
-    # Passo 2 (RN3): há vaga para todos? (o mesmo voo pode ser usado em mais de um trecho)
+    # mesmo voo pode aparecer em mais de um trecho
     demanda = Counter(voo.id for voo in voos)
     for trecho, voo in zip(trechos, voos):
         if voo.vagas < demanda[voo.id]:
             raise SemVagas(trecho)
 
-    # Passo 3 (RN1): tarifa dinâmica de cada trecho e total
     cotados = [
         TrechoCotado(
             origem=voo.origem,
@@ -92,11 +90,9 @@ def reservar_roteiro(
     ]
     total = somar_valores(c.valor for c in cotados)
 
-    # Passo 4 (RN2): o total cabe no teto?
     if not orcamento_suficiente(total, comando.teto_financeiro):
         raise SemSaldo(comando.teto_financeiro, total, cotados)
 
-    # Passo 5: só agora grava, tudo na mesma transação.
     try:
         for voo_id, quantidade in demanda.items():
             voo = next(v for v in voos if v.id == voo_id)

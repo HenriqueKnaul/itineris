@@ -3,10 +3,7 @@ from datetime import datetime, timedelta, timezone
 from jose import jwt
 from passlib.context import CryptContext
 
-# A chave vem de variável de ambiente (a mesma usada pelo gateway para
-# validar o token). O valor padrão só existe para não quebrar o ambiente
-# local/testes quando a variável não está definida; em produção, defina
-# SECRET_KEY explicitamente (ver .env.example).
+# mesma chave usada pelo gateway para validar o token (ver .env.example)
 SECRET_KEY = os.getenv("SECRET_KEY", "chave-padrao-apenas-para-desenvolvimento-trocar-em-producao")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 120

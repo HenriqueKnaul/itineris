@@ -1,10 +1,4 @@
-"""Middleware de rastreio: dá um ID único a cada requisição e mede o tempo.
-
-Como todo o tráfego do sistema passa pelo gateway, é aqui que faz sentido
-registrar quem chamou o quê. O `X-Request-ID` é repassado adiante pelo proxy
-(ele viaja junto dos cabeçalhos), permitindo ligar o log do gateway ao log do
-microsserviço.
-"""
+"""Middleware de rastreio: dá um ID único a cada requisição e mede o tempo."""
 import logging
 import time
 import uuid
@@ -19,8 +13,7 @@ class CorrelacaoMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         request_id = request.headers.get("x-request-id") or str(uuid.uuid4())
 
-        # Repassa o ID adiante: os headers do Starlette são imutáveis, então
-        # alteramos a lista de bytes do escopo diretamente.
+        # headers do Starlette são imutáveis: mexe direto na lista de bytes do escopo
         request.scope["headers"] = [
             (chave, valor)
             for chave, valor in request.scope["headers"]

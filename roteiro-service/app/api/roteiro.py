@@ -23,8 +23,6 @@ class RoteiroCreate(RoteiroBase):
 @router.post("/", response_model=Roteiro, status_code=status.HTTP_201_CREATED)
 def criar_roteiro(payload: RoteiroCreate, session: Session = Depends(get_session)):
     """Cria um novo roteiro de viagem junto com a sua lista de destinos."""
-    
-    # 1. Instancia o objeto Roteiro (Mestre)
     novo_roteiro = Roteiro(
         titulo=payload.titulo,
         data_inicio=payload.data_inicio,
@@ -36,9 +34,8 @@ def criar_roteiro(payload: RoteiroCreate, session: Session = Depends(get_session
     
     session.add(novo_roteiro)
     session.commit()
-    session.refresh(novo_roteiro) # Atualiza para obter o ID gerado pelo banco
+    session.refresh(novo_roteiro)  # pega o ID gerado pelo banco
 
-    # 2. Instancia os Destinos vinculados ao Roteiro criado (Detalhes)
     for dest in payload.destinos:
         novo_destino = Destino(
             cidade=dest.cidade,
@@ -90,15 +87,6 @@ def deletar_roteiro(roteiro_id: int, session: Session = Depends(get_session)):
 
 
 # --- Saga de reserva (orquestrada pelo roteiro-service) ---------------------
-#
-# Passo local  1: valida o roteiro e seu estado atual.
-# Passo remoto 2: pede ao cotacao-service que reserve as passagens.
-# Passo local  3: confirma o roteiro como RESERVADO (só se o passo 2 aprovou).
-#
-# Não há compensação a fazer no caso "rejeitado": o cotacao-service não grava
-# nada quando rejeita (é tudo ou nada, ver app/application/commands/
-# reservar_roteiro.py do cotacao-service). A compensação existe para quando o
-# usuário desiste de um roteiro JÁ reservado: ver /roteiros/{id}/cancelar-reserva.
 @router.post("/{roteiro_id}/reservar", tags=["Roteiros", "Saga"])
 async def reservar(roteiro_id: int, session: Session = Depends(get_session)):
     """Aciona a reserva das passagens do roteiro junto ao cotacao-service."""
@@ -133,23 +121,15 @@ async def reservar(roteiro_id: int, session: Session = Depends(get_session)):
             destinos=destinos_payload,
         )
     except FalhaDeComunicacao as erro:
-        # O serviço de cotação está fora do ar ou não respondeu a tempo.
-        # Nada foi alterado no roteiro: ele continua no estado anterior.
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(erro))
 
     if isinstance(resultado, ReservaRejeitada):
-        # Rejeição de NEGÓCIO (sem saldo, sem vagas, voo inexistente):
-        # o roteiro permanece como estava, o motivo vai para o cliente em 422.
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=resultado.model_dump(),
         )
 
-    # Aprovado: confirma o passo local que faltava. Se o commit falhar aqui,
-    # o cotacao-service já reservou e cobrou as passagens — sem a compensação
-    # abaixo, o roteiro ficaria "RASCUNHO" enquanto o dinheiro/vagas já
-    # teriam sido consumidos do outro lado, uma inconsistência entre os dois
-    # bancos que a Saga existe justamente para evitar.
+    # se o commit local falhar, precisa desfazer a reserva já feita no cotacao-service
     roteiro.status = "RESERVADO"
     session.add(roteiro)
     try:
@@ -159,10 +139,7 @@ async def reservar(roteiro_id: int, session: Session = Depends(get_session)):
         try:
             await cancelar_passagens(roteiro.id)
         except FalhaDeComunicacao as erro_compensacao:
-            # Pior caso: nem o commit local nem a compensação remota deram
-            # certo. O roteiro continua "RASCUNHO" no nosso banco, mas o
-            # cotacao-service acha que está tudo reservado — fica registrado
-            # no detalhe do erro para reconciliação manual/observabilidade.
+            # nem o commit local nem a compensação deram certo: precisa reconciliar na mão
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=(

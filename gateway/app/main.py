@@ -1,13 +1,4 @@
-"""API Gateway do Itineris — ponto de entrada único do ecossistema.
-
-Padrão de microsserviços: **API Gateway**. O cliente conhece apenas a porta
-8000; o gateway descobre o serviço de destino pelo prefixo da URL e repassa a
-chamada (proxy reverso) usando `httpx`.
-
-    /roteiros/*, /destinos/*    -> roteiro-service  (8002)
-    /cotacoes/*, /orcamentos/*  -> cotacao-service  (8003)
-    /auth/*                     -> auth-service     (8001)
-"""
+"""API Gateway do Itineris: ponto de entrada único, roteia por prefixo de URL."""
 import asyncio
 import logging
 from contextlib import asynccontextmanager
@@ -22,17 +13,13 @@ from app.middlewares.correlacao import CorrelacaoMiddleware
 from app.routing import proxy
 from app.routing.rotas import MAPA_DE_ROTAS, SERVICOS, Servico, resolver
 
-# Prefixos que não exigem token: o login precisa ser acessível sem estar
-# autenticado ainda. Todo o resto (roteiros, destinos, cotações, orçamentos)
-# passa pela validação do JWT antes de ser encaminhado ao microsserviço.
+# login não exige token; o resto passa pela validação do JWT
 PREFIXOS_PUBLICOS = {"auth"}
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 METODOS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"]
 
-# Um único cliente HTTP para todo o processo: reaproveitar as conexões TCP é o
-# que mantém o gateway leve mesmo sendo o caminho de todo o tráfego.
 TEMPO_LIMITE = httpx.Timeout(connect=5.0, read=30.0, write=30.0, pool=5.0)
 
 

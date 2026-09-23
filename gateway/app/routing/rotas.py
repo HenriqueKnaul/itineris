@@ -1,14 +1,4 @@
-"""Tabela de roteamento do API Gateway.
-
-O gateway não conhece regra de negócio nenhuma: ele só sabe que o *primeiro
-segmento* da URL indica qual microsserviço deve atender a requisição.
-
-    /roteiros/1        -> roteiro-service
-    /cotacoes/reservar -> cotacao-service
-
-As URLs vêm de variáveis de ambiente para que o mesmo código rode dentro do
-Docker (onde o host é o nome do serviço) e fora dele (localhost).
-"""
+"""Tabela de roteamento do API Gateway: primeiro segmento da URL -> microsserviço."""
 import os
 from dataclasses import dataclass
 
@@ -43,19 +33,13 @@ MAPA_DE_ROTAS: dict[str, Servico] = {
     "destinos": ROTEIRO_SERVICE,
     "cotacoes": COTACAO_SERVICE,
     "orcamentos": COTACAO_SERVICE,
-    # Ainda não implementado pelo grupo; quando o auth-service subir, já roteia.
     "auth": AUTH_SERVICE,
 }
 
-# Serviços usados pelo health check agregado.
 SERVICOS: list[Servico] = [ROTEIRO_SERVICE, COTACAO_SERVICE, AUTH_SERVICE]
 
 
 def resolver(caminho: str) -> Servico | None:
-    """Descobre o serviço responsável por um caminho. None = rota desconhecida.
-
-    >>> resolver("cotacoes/reservar").nome
-    'cotacao-service'
-    """
+    """Descobre o serviço responsável por um caminho. None = rota desconhecida."""
     prefixo = caminho.strip("/").split("/", 1)[0].lower()
     return MAPA_DE_ROTAS.get(prefixo)

@@ -1,9 +1,4 @@
-"""Entidades do domínio do Cotação Service (tabelas SQLModel).
-
-Este módulo não conhece FastAPI nem detalhes de infraestrutura: apenas descreve
-os dados do negócio. As regras (tarifa, orçamento, vagas) ficam em `regras.py`
-e nos comandos de `application/commands/`.
-"""
+"""Entidades do domínio do Cotação Service (tabelas SQLModel)."""
 from datetime import date, datetime, timezone
 from enum import Enum
 from typing import Optional

@@ -14,12 +14,7 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Registra as rotas de Roteiros na aplicação
 app.include_router(roteiro_router)
-
-#@app.get("/")
-#def home():
- #   return {"status": "Serviço de Roteiro e Banco de Dados operacionais!"}
 
 @app.get("/health")
 def health_check():

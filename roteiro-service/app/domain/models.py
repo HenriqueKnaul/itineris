@@ -20,10 +20,7 @@ class Roteiro(RoteiroBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     usuario_id: int
 
-    # Relacionamento Mestre-Detalhe (1 Roteiro tem muitos Destinos).
-    # cascade="all, delete-orphan" faz o SQLAlchemy apagar os destinos junto
-    # com o roteiro (sem isso, o DELETE do roteiro batia num destino órfão
-    # com a FK ainda apontando pra ele e estourava 500).
+    # cascade delete-orphan: apaga os destinos junto com o roteiro
     destinos: List["Destino"] = Relationship(
         back_populates="roteiro",
         sa_relationship_kwargs={"cascade": "all, delete-orphan"},
@@ -40,5 +37,4 @@ class Destino(DestinoBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     roteiro_id: int = Field(foreign_key="roteiro.id")
 
-    # Referência de volta para o Roteiro pai
     roteiro: Optional[Roteiro] = Relationship(back_populates="destinos")

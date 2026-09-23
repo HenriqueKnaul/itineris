@@ -1,10 +1,4 @@
-"""Cliente HTTP para o cotacao-service.
-
-O roteiro-service atua como ORQUESTRADOR da Saga de reserva: ele decide a
-ordem dos passos e chama o cotacao-service (participante) via REST. Este
-módulo só sabe conversar HTTP; a decisão do que fazer com a resposta fica
-nas rotas (`app/api/roteiro.py`).
-"""
+"""Cliente HTTP para o cotacao-service."""
 import os
 from datetime import date
 
@@ -13,9 +7,6 @@ from pydantic import BaseModel
 
 COTACAO_SERVICE_URL = os.getenv("COTACAO_SERVICE_URL", "http://cotacao-service:8003")
 
-# Timeout curto: se o cotacao-service não responder rápido, o roteiro-service
-# não pode travar o cliente esperando — ele reporta falha e o usuário tenta
-# de novo (a chamada é idempotente do lado do cotacao-service).
 _TIMEOUT = httpx.Timeout(connect=3.0, read=10.0, write=10.0, pool=3.0)
 
 
@@ -46,11 +37,7 @@ async def reservar_passagens(
     teto_financeiro: float,
     destinos: list[dict],
 ) -> ReservaAprovada | ReservaRejeitada:
-    """Passo remoto da Saga: pede ao cotacao-service que reserve as passagens.
-
-    `destinos` é uma lista de dicts com "cidade", "data_chegada", "data_partida"
-    (mesmo formato aceito pelo endpoint /cotacoes/reservar).
-    """
+    """Pede ao cotacao-service que reserve as passagens do roteiro."""
     corpo = {
         "roteiro_id": roteiro_id,
         "teto_financeiro": teto_financeiro,
@@ -77,11 +64,7 @@ async def reservar_passagens(
 
 
 async def cancelar_passagens(roteiro_id: int) -> int:
-    """Passo de COMPENSAÇÃO da Saga: desfaz reservas já feitas para o roteiro.
-
-    Usado tanto pelo cancelamento explícito do usuário quanto por qualquer
-    rollback futuro. Retorna quantas reservas foram canceladas.
-    """
+    """Cancela as reservas do roteiro. Retorna quantas foram canceladas."""
     async with httpx.AsyncClient(timeout=_TIMEOUT) as cliente:
         try:
             resposta = await cliente.post(

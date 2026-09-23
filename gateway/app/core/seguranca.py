@@ -1,19 +1,9 @@
-"""Validação de tokens JWT no API Gateway.
-
-O gateway é o único ponto de entrada do ecossistema, então é aqui que faz
-sentido barrar requisições sem um token válido antes de repassá-las aos
-microsserviços de domínio (roteiro-service e cotacao-service). O auth-service
-continua sendo o único responsável por EMITIR o token (rota /auth/login);
-o gateway só sabe conferir a assinatura.
-
-A SECRET_KEY precisa ser a mesma usada pelo auth-service para assinar o
-token — por isso ambos os serviços lêem a mesma variável de ambiente.
-"""
+"""Validação de tokens JWT no API Gateway."""
 import os
 
 from jose import JWTError, jwt
 
-SECRET_KEY = os.getenv("SECRET_KEY", "chave-padrao-apenas-para-desenvolvimento-trocar-em-producao")
+SECRET_KEY = os.getenv("SECRET_KEY", "chave-padrao-apenas-para-desenvolvimento-trocar-em-producao")  # mesma chave do auth-service
 ALGORITHM = "HS256"
 
 

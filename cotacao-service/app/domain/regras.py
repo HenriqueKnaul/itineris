@@ -1,14 +1,4 @@
-"""Regras de negócio PURAS do Cotação Service.
-
-Nada aqui acessa banco de dados, HTTP ou relógio do sistema: as funções apenas
-recebem valores e devolvem resultados. Isso as torna fáceis de testar e mantém o
-domínio independente de framework.
-
-    RN1 - Tarifa dinâmica            -> calcular_tarifa
-    RN2 - Validação de orçamento     -> somar_valores, orcamento_suficiente, calcular_faltante
-    RN3 - Controle de vagas          -> aplicado em application/commands/reservar_roteiro.py
-    Apoio - trechos do roteiro       -> montar_trechos, normalizar_nome
-"""
+"""Regras de negócio do Cotação Service: funções puras, sem acesso a banco/HTTP."""
 import unicodedata
 from dataclasses import dataclass
 from datetime import date
@@ -100,12 +90,7 @@ def calcular_tarifa(
     data_viagem: date,
     hoje: date,
 ) -> float:
-    """Aplica acréscimos ao preço base conforme ocupação do voo e antecedência.
-
-    - Ocupação >= 80%: +30%; ocupação >= 50%: +15%; senão +0%.
-    - Voo em menos de 7 dias: +20% adicional.
-    Os acréscimos se somam sobre o preço base. Resultado arredondado a 2 casas.
-    """
+    """Acréscimo por ocupação (>=80% +30%, >=50% +15%) somado ao de última hora (<7 dias: +20%)."""
     ocupacao = calcular_ocupacao(capacidade, vagas)
     if ocupacao >= LIMITE_OCUPACAO_ALTA:
         acrescimo = ACRESCIMO_OCUPACAO_ALTA

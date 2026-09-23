@@ -1,19 +1,11 @@
-"""Proxy reverso: repassa a requisição recebida para o microsserviço de destino.
-
-Responsabilidades desta camada:
-  1. remontar a URL de destino preservando caminho e query string;
-  2. repassar método, cabeçalhos e corpo sem alterar o conteúdo;
-  3. limpar cabeçalhos que não podem ser repassados (hop-by-hop);
-  4. traduzir falhas de rede em códigos HTTP claros (502/503/504).
-"""
+"""Proxy reverso: repassa a requisição recebida para o microsserviço de destino."""
 import httpx
 from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 
 from app.routing.rotas import Servico
 
-# Cabeçalhos que valem apenas para a conexão atual (RFC 9110) e, por isso,
-# não podem ser repassados adiante.
+# cabeçalhos hop-by-hop (RFC 9110): não podem ser repassados adiante
 HOP_BY_HOP = {
     "connection",
     "keep-alive",
@@ -25,8 +17,7 @@ HOP_BY_HOP = {
     "upgrade",
 }
 
-# O httpx já descomprime o corpo e recalcula o tamanho: repassar os valores
-# antigos faria o cliente tentar descomprimir um corpo já em texto puro.
+# httpx já descomprime o corpo e recalcula o tamanho, então esses dois não valem mais
 IGNORADOS_NA_RESPOSTA = HOP_BY_HOP | {"content-encoding", "content-length"}
 
 
@@ -51,9 +42,7 @@ def _headers_da_resposta(resposta: httpx.Response, servico: Servico) -> dict[str
         for chave, valor in resposta.headers.items()
         if chave.lower() not in IGNORADOS_NA_RESPOSTA
     }
-    # Redirecionamentos (ex.: o 307 de barra final do FastAPI) apontam para a
-    # URL interna do container. Reescrevemos para o caminho relativo, senão o
-    # navegador do usuário tentaria acessar "http://cotacao-service:8003/...".
+    # redirecionamentos vêm com a URL interna do container; reescreve pro caminho relativo
     location = headers.get("location")
     if location and location.startswith(servico.base_url):
         headers["location"] = location[len(servico.base_url) :] or "/"
