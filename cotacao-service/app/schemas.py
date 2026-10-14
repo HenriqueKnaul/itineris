@@ -1,11 +1,9 @@
-"""Contratos HTTP (entrada e saída) do Cotação Service."""
 from datetime import date
 from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
-# ---------- Entrada ----------
 class DestinoIn(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
@@ -30,7 +28,6 @@ class CancelarRequest(BaseModel):
     roteiro_id: int
 
 
-# ---------- Saída: reservar ----------
 class ReservaItem(BaseModel):
     reserva_id: int
     origem: str
@@ -66,13 +63,11 @@ class ReservaRejeitada(BaseModel):
     trecho: Optional[TrechoOut] = None
 
 
-# ---------- Saída: cancelar ----------
 class CancelarResponse(BaseModel):
     status: Literal["cancelado"] = "cancelado"
     reservas_canceladas: int
 
 
-# ---------- Saída: extrato ----------
 class PassagemOut(BaseModel):
     reserva_id: int
     origem: str

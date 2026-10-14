@@ -1,6 +1,5 @@
 services:
   gateway:
-    # Nginx como API Gateway: a configuração inteira está em gateway/nginx.conf
     image: nginx:1.27-alpine
     container_name: gateway
     ports:
@@ -15,8 +14,7 @@ services:
   roteiro-service:
     build: ./roteiro-service
     container_name: roteiro-service
-    # A porta só fica exposta para facilitar o debug e a apresentação;
-    # o acesso "oficial" da aplicação é sempre pelo gateway (8000).
+
     ports:
       - "8002:8002"
     volumes:

@@ -1,7 +1,3 @@
-"""CQRS - lado de LEITURA (consultas): só faz SELECT, nunca altera nada.
-
-As rotas que mudam dados estão em escrita.py.
-"""
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -27,7 +23,6 @@ def extrato(roteiro_id: int, session: Session = Depends(get_session)):
 
 
 def consultar_extrato(session: Session, roteiro_id: int) -> Optional[ExtratoResponse]:
-    """Devolve o extrato, ou None se o roteiro ainda não tem orçamento."""
     orcamento = session.exec(select(Orcamento).where(Orcamento.roteiro_id == roteiro_id)).first()
     if orcamento is None:
         return None

@@ -1,4 +1,3 @@
-"""Tabelas do banco do cotacao-service."""
 from datetime import date, datetime, timezone
 from typing import Optional
 
@@ -9,7 +8,6 @@ CANCELADA = "CANCELADA"
 
 
 class Voo(SQLModel, table=True):
-    """Catálogo fictício de voos: um registro por rota (origem -> destino)."""
 
     __table_args__ = (UniqueConstraint("origem", "destino"),)
 
@@ -22,21 +20,19 @@ class Voo(SQLModel, table=True):
 
 
 class Orcamento(SQLModel, table=True):
-    """Quanto o roteiro pode gastar (teto) e quanto já gastou em passagens."""
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    roteiro_id: int = Field(unique=True, index=True)  # sem FK: cada serviço tem o seu banco
+    roteiro_id: int = Field(unique=True, index=True)  
     teto_financeiro: float
     valor_utilizado: float = 0.0
 
 
 class Reserva(SQLModel, table=True):
-    """Uma passagem comprada para um roteiro."""
 
     id: Optional[int] = Field(default=None, primary_key=True)
     roteiro_id: int = Field(index=True)
     voo_id: int = Field(foreign_key="voo.id")
     data_viagem: date
-    valor_cobrado: float  # já com a tarifa dinâmica
+    valor_cobrado: float  
     status: str = Field(default=CONFIRMADA)
     criada_em: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))

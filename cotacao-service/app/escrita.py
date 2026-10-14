@@ -1,8 +1,3 @@
-"""CQRS - lado de ESCRITA (comandos): reservar e cancelar passagens.
-
-Aqui ficam as rotas que MUDAM dados. As consultas estão em leitura.py.
-É chamado pela Saga do roteiro-service.
-"""
 from collections import Counter
 from datetime import date
 from typing import Optional, Union
@@ -34,7 +29,6 @@ router = APIRouter(prefix="/cotacoes", tags=["Cotações (Commands)"])
 
 
 class Rejeicao(Exception):
-    """Recusa de negócio (sem saldo, sem vagas...). Não é bug: vira HTTP 200 com status 'rejeitado'."""
 
     def __init__(self, motivo: str, mensagem: str, **detalhes):
         super().__init__(mensagem)
@@ -43,7 +37,6 @@ class Rejeicao(Exception):
         self.detalhes = detalhes
 
 
-# --- Rotas -------------------------------------------------------------------
 @router.post(
     "/reservar",
     response_model=Union[ReservaAprovada, ReservaRejeitada],
@@ -62,12 +55,9 @@ def cancelar(pedido: CancelarRequest, session: Session = Depends(get_session)):
     return CancelarResponse(reservas_canceladas=cancelar_reservas(session, pedido.roteiro_id))
 
 
-# --- Comandos ----------------------------------------------------------------
 def reservar_roteiro(session: Session, pedido: ReservarRequest, hoje: Optional[date] = None) -> ReservaAprovada:
-    """Reserva todos os trechos do roteiro. Se algo não der, levanta Rejeicao e não grava nada."""
     hoje = hoje or date.today()
 
-    # A Saga pode repetir a chamada: se já reservou, devolve o que já existe (idempotência).
     ja_reservadas = _reservas_confirmadas(session, pedido.roteiro_id)
     if ja_reservadas:
         return _aprovacao_ja_existente(session, pedido.roteiro_id, ja_reservadas)
@@ -77,7 +67,6 @@ def reservar_roteiro(session: Session, pedido: ReservarRequest, hoje: Optional[d
         (normalizar_nome(v.origem), normalizar_nome(v.destino)): v for v in session.exec(select(Voo)).all()
     }
 
-    # 1) Existe voo pra cada trecho?
     voos = []
     for trecho in trechos:
         voo = catalogo.get((normalizar_nome(trecho.origem), normalizar_nome(trecho.destino)))
@@ -89,7 +78,6 @@ def reservar_roteiro(session: Session, pedido: ReservarRequest, hoje: Optional[d
             )
         voos.append(voo)
 
-    # 2) Tem vaga? (o mesmo voo pode aparecer em mais de um trecho)
     vagas_necessarias = Counter(voo.id for voo in voos)
     for trecho, voo in zip(trechos, voos):
         if voo.vagas < vagas_necessarias[voo.id]:
@@ -99,7 +87,6 @@ def reservar_roteiro(session: Session, pedido: ReservarRequest, hoje: Optional[d
                 trecho=TrechoOut(origem=trecho.origem, destino=trecho.destino, data=trecho.data),
             )
 
-    # 3) Quanto custa e cabe no orçamento?
     valores = [
         calcular_tarifa(voo.preco_base, voo.capacidade, voo.vagas, trecho.data, hoje)
         for trecho, voo in zip(trechos, voos)
@@ -118,7 +105,6 @@ def reservar_roteiro(session: Session, pedido: ReservarRequest, hoje: Optional[d
             ],
         )
 
-    # 4) Tudo certo: grava (ou desfaz tudo se der erro)
     try:
         voos_por_id = {voo.id: voo for voo in voos}
         for voo_id, quantidade in vagas_necessarias.items():
@@ -153,10 +139,6 @@ def reservar_roteiro(session: Session, pedido: ReservarRequest, hoje: Optional[d
 
 
 def cancelar_reservas(session: Session, roteiro_id: int) -> int:
-    """Devolve vagas e dinheiro ao orçamento. Retorna quantas reservas foram canceladas.
-
-    Se não há reservas confirmadas, não faz nada e retorna 0 (pode chamar duas vezes sem problema).
-    """
     reservas = _reservas_confirmadas(session, roteiro_id)
     if not reservas:
         return 0
@@ -185,7 +167,6 @@ def cancelar_reservas(session: Session, roteiro_id: int) -> int:
     return len(reservas)
 
 
-# --- Apoio -------------------------------------------------------------------
 def _buscar_orcamento(session: Session, roteiro_id: int) -> Optional[Orcamento]:
     return session.exec(select(Orcamento).where(Orcamento.roteiro_id == roteiro_id)).first()
 
