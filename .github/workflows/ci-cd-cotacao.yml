@@ -50,10 +50,17 @@ jobs:
 
       - name: 6. Build e Push da Imagem Docker (Containerização + SemVer)
         run: |
-          # Define a versão semântica (ex: 1.0.1, 1.0.2 baseado no número da execução do GitHub)
           VERSION="1.0.${{ github.run_number }}"
           IMAGE="${{ secrets.DOCKER_USERNAME }}/itineris-cotacao"
           
           docker build -t $IMAGE:$VERSION -t $IMAGE:latest .
           docker push $IMAGE:$VERSION
           docker push $IMAGE:latest
+
+      - name: 7. Deploy Automático para DEV (branch develop)
+        if: github.ref == 'refs/heads/develop'
+        run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_DEV }}"
+
+      - name: 8. Deploy Automático para HOMOL (branch main)
+        if: github.ref == 'refs/heads/main'
+        run: curl -X POST "${{ secrets.RENDER_DEPLOY_HOOK_HOMOL }}"
