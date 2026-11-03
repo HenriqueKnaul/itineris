@@ -1,0 +1,6 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/cotacao-service"
+    schedule:
+      interval: "weekly"
