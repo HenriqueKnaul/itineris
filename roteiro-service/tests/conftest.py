@@ -1,4 +1,3 @@
-"""Fixtures compartilhadas: banco SQLite em memória e cliente HTTP de teste."""
 from datetime import date, timedelta
 
 import pytest
@@ -12,7 +11,6 @@ from app.main import app
 
 @pytest.fixture
 def session():
-    """Banco novo (em memória) para cada teste: nada vaza entre testes."""
     engine = create_engine(
         "sqlite://",
         connect_args={"check_same_thread": False},
@@ -26,9 +24,6 @@ def session():
 
 @pytest.fixture
 def client(session):
-    """Cliente HTTP usando o mesmo banco em memória do teste (mesma sessão em
-    todas as chamadas, o que permite o teste monkeypatchar session.commit
-    quando precisa simular uma falha no meio da Saga)."""
     app.dependency_overrides[get_session] = lambda: session
     yield TestClient(app)
     app.dependency_overrides.clear()
@@ -36,7 +31,6 @@ def client(session):
 
 @pytest.fixture
 def payload_roteiro():
-    """Corpo de exemplo para criar um roteiro com um destino."""
     inicio = date.today() + timedelta(days=30)
     return {
         "titulo": "Férias na Europa",

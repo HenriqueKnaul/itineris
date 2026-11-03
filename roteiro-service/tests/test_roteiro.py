@@ -1,9 +1,3 @@
-"""Testes de integração das rotas de roteiro (FastAPI TestClient + banco em memória).
-
-Foco: CRUD, validação de datas, cascade delete e a Saga de reserva, incluindo a
-compensação quando o commit local falha depois da aprovação remota.
-O cotacao-service é sempre simulado (AsyncMock): aqui só testamos o roteiro-service.
-"""
 from unittest.mock import AsyncMock
 
 import pytest
@@ -25,7 +19,6 @@ def roteiro_id(client, payload_roteiro):
     return client.post("/roteiros/", json=payload_roteiro).json()["id"]
 
 
-# ---------- CRUD ----------
 def test_criar_roteiro_com_destinos(client, payload_roteiro, session):
     resposta = client.post("/roteiros/", json=payload_roteiro)
 
@@ -56,7 +49,6 @@ def test_roteiro_inexistente_da_404(client):
     assert client.get("/roteiros/999").status_code == 404
 
 
-# ---------- Saga ----------
 def test_reservar_aprovado_marca_o_roteiro_como_reservado(client, roteiro_id, monkeypatch):
     monkeypatch.setattr(roteiros, "reservar_passagens", AsyncMock(return_value=APROVADO))
 
@@ -93,9 +85,6 @@ def test_reservar_duas_vezes_da_409(client, roteiro_id, monkeypatch):
 
 
 def test_reservar_roteiro_compensa_quando_commit_local_falha(client, roteiro_id, session, monkeypatch):
-    """Aprova a reserva no cotacao-service, mas força o commit local a falhar: a rota
-    precisa acionar a compensação (cancelar_passagens) em vez de deixar os dois bancos
-    inconsistentes."""
     monkeypatch.setattr(roteiros, "reservar_passagens", AsyncMock(return_value=APROVADO))
     cancelar_mock = AsyncMock(return_value=1)
     monkeypatch.setattr(roteiros, "cancelar_passagens", cancelar_mock)

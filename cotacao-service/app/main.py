@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Serviço de Cotação - Itineris",
-    description="Orçamento e reserva de passagens (CQRS: escrita.py e leitura.py).",
+    description="Orçamento e reserva de passagens",
     lifespan=lifespan,
 )
 

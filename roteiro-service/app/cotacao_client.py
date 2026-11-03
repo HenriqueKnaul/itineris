@@ -1,4 +1,3 @@
-"""Cliente HTTP para falar com o cotacao-service."""
 import os
 
 import httpx
@@ -29,7 +28,6 @@ async def reservar_passagens(roteiro_id: int, teto_financeiro: float, destinos: 
 
 
 async def cancelar_passagens(roteiro_id: int) -> int:
-    """Cancela as reservas do roteiro. Retorna quantas foram canceladas."""
     resposta = await _post("/cotacoes/cancelar", {"roteiro_id": roteiro_id})
     return resposta.get("reservas_canceladas", 0)
 

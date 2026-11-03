@@ -52,7 +52,7 @@ class TrechoOut(BaseModel):
 
 class ReservaRejeitada(BaseModel):
     status: Literal["rejeitado"] = "rejeitado"
-    motivo: str  # sem_saldo | sem_vagas | voo_nao_encontrado
+    motivo: str  # sem_saldo , sem_vagas , voo_nao_encontrado
     mensagem: str
     # preenchidos apenas em "sem_saldo"
     teto_financeiro: Optional[float] = None

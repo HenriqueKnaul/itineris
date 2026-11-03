@@ -10,7 +10,6 @@ from app.models import Destino, DestinoBase, Roteiro, RoteiroBase
 router = APIRouter(prefix="/roteiros", tags=["Roteiros"])
 
 
-# O que o cliente envia pra criar um roteiro (já com a lista de destinos)
 class RoteiroCreate(RoteiroBase):
     usuario_id: int
     destinos: List[DestinoBase] = []
@@ -23,10 +22,8 @@ def _buscar_ou_404(session: Session, roteiro_id: int) -> Roteiro:
     return roteiro
 
 
-# --- CRUD --------------------------------------------------------------------
 @router.post("/", response_model=Roteiro, status_code=status.HTTP_201_CREATED)
 def criar_roteiro(payload: RoteiroCreate, session: Session = Depends(get_session)):
-    """Cria um roteiro junto com a sua lista de destinos."""
     dados = payload.model_dump(exclude={"destinos"})
     destinos = [Destino(**d.model_dump()) for d in payload.destinos]
 
@@ -49,15 +46,12 @@ def obter_roteiro(roteiro_id: int, session: Session = Depends(get_session)):
 
 @router.delete("/{roteiro_id}", status_code=status.HTTP_204_NO_CONTENT)
 def deletar_roteiro(roteiro_id: int, session: Session = Depends(get_session)):
-    """Remove o roteiro e (em cascata) os seus destinos."""
     session.delete(_buscar_ou_404(session, roteiro_id))
     session.commit()
 
 
-# --- Saga de reserva (o roteiro-service é o orquestrador) --------------------
 @router.post("/{roteiro_id}/reservar", tags=["Saga"])
 async def reservar(roteiro_id: int, session: Session = Depends(get_session)):
-    """Passo 1 da Saga: reserva as passagens no cotacao-service e marca o roteiro como RESERVADO."""
     roteiro = _buscar_ou_404(session, roteiro_id)
 
     if roteiro.status == "RESERVADO":
@@ -65,7 +59,6 @@ async def reservar(roteiro_id: int, session: Session = Depends(get_session)):
     if not roteiro.destinos:
         raise HTTPException(422, detail="O roteiro não tem destinos para reservar.")
 
-    # 1) Pede a reserva ao cotacao-service
     destinos_em_ordem = sorted(roteiro.destinos, key=lambda d: d.ordem)
     try:
         resultado = await reservar_passagens(roteiro.id, roteiro.orcamento_teto, destinos_em_ordem)
@@ -75,7 +68,6 @@ async def reservar(roteiro_id: int, session: Session = Depends(get_session)):
     if resultado.get("status") != "aprovado":
         raise HTTPException(422, detail=resultado)
 
-    # 2) Salva o novo status. Se falhar, COMPENSA: cancela a reserva que acabou de ser feita.
     roteiro.status = "RESERVADO"
     session.add(roteiro)
     try:
@@ -104,7 +96,6 @@ async def reservar(roteiro_id: int, session: Session = Depends(get_session)):
 
 @router.post("/{roteiro_id}/cancelar-reserva", tags=["Saga"])
 async def cancelar_reserva(roteiro_id: int, session: Session = Depends(get_session)):
-    """Compensação da Saga: desfaz a reserva de um roteiro que está RESERVADO."""
     roteiro = _buscar_ou_404(session, roteiro_id)
 
     if roteiro.status != "RESERVADO":
