@@ -1,0 +1,13 @@
+on:
+  push:
+    branches:
+      - "feature/**"
+      - "develop"
+      - "main"
+    paths:
+      - "roteiro-service/**"
+      - ".github/workflows/ci-cd-roteiro.yml"
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
