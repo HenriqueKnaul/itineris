@@ -46,3 +46,24 @@ services:
       SECRET_KEY: ${SECRET_KEY:-chave-padrao-apenas-para-desenvolvimento-trocar-em-producao}
       PYTHONUNBUFFERED: "1"
     command: uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: itineris-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    depends_on:
+      - cotacao-service
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: itineris-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
