@@ -15,8 +15,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      #Preparação do ambiente
       - name: Baixar o código
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Configurar Python
         uses: actions/setup-python@v5
@@ -26,7 +29,20 @@ jobs:
       - name: Instalar dependências
         run: pip install -r requirements.txt
         working-directory: ./roteiro-service
-  
+
+      #executar testes e gerar cobertura
       - name: Executar testes e gerar cobertura
         run: pytest --cov=app --cov-report=xml:coverage.xml
         working-directory: ./roteiro-service
+
+      #SONAR
+      - name: Analisar código no SonarCloud
+        uses: SonarSource/sonarqube-scan-action@v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: roteiro-service
+          
+      #DOCKER
+      - name: Construir imagem Docker
+        run: docker build -t roteiro-service:latest ./roteiro-service
