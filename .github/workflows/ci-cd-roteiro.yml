@@ -35,13 +35,13 @@ jobs:
         run: pytest --cov=app --cov-report=xml:coverage.xml
         working-directory: ./roteiro-service
 
-      #SONAR
-      - name: Analisar código no SonarCloud
-        uses: SonarSource/sonarqube-scan-action@v8.3.0
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          projectBaseDir: roteiro-service
+      #SONAR preciso da permissao do Henrique para habilitar o sonarcloud, por enquanto deixei comentado
+     # - name: Analisar código no SonarCloud
+     #   uses: SonarSource/sonarqube-scan-action@v8.3.0
+     #   env:
+     #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+     #   with:
+     #     projectBaseDir: roteiro-service
           
       #DOCKER
       - name: Construir imagem Docker
