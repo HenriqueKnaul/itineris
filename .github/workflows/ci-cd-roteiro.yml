@@ -1,3 +1,5 @@
+name: CI/CD - Roteiro Service
+
 on:
   push:
     branches:
@@ -11,3 +13,7 @@ on:
 jobs:
   ci:
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Teste do pipeline
+        run: echo "CI do Roteiro iniciado com sucesso!"
