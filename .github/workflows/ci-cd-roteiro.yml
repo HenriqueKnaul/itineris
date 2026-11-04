@@ -15,5 +15,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Teste do pipeline
-        run: echo "CI do Roteiro iniciado com sucesso!"
+      steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
