@@ -35,7 +35,7 @@ jobs:
         run: pytest --cov=app --cov-report=xml:coverage.xml
         working-directory: ./roteiro-service
 
-      #SONAR preciso da permissao do Henrique para habilitar o sonarcloud, por enquanto deixei comentado
+      #SONAr
       - name: Analisar código no SonarCloud
         uses: SonarSource/sonarqube-scan-action@v8.3.0
         env:
