@@ -27,6 +27,6 @@ jobs:
         run: pip install -r requirements.txt
         working-directory: ./roteiro-service
   
-      - name: Executar testes
-        run: pytest
+      - name: Executar testes e gerar cobertura
+        run: pytest --cov=app --cov-report=xml:coverage.xml
         working-directory: ./roteiro-service
