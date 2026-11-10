@@ -1,4 +1,4 @@
-name: CI/CD - Roteiro Service
+name: CI/CD - Roteiro Service #teste cd
 
 on:
   push:
@@ -35,7 +35,7 @@ jobs:
         run: pytest --cov=app --cov-report=xml:coverage.xml
         working-directory: ./roteiro-service
 
-      #SONAr
+      #Sonar
       - name: Analisar código no SonarCloud
         uses: SonarSource/sonarqube-scan-action@v8.3.0
         env:
