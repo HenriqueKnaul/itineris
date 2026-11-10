@@ -1,4 +1,4 @@
-name: CI/CD - Roteiro Service #teste cd
+name: CI/CD - Roteiro Service 
 
 on:
   push:
