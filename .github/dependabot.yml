@@ -4,3 +4,9 @@ updates:
     directory: "/cotacao-service"
     schedule:
       interval: "weekly"
+
+  #dependbot roteiro
+  - package-ecosystem: "pip"
+    directory: "/roteiro-service"
+    schedule:
+      interval: "weekly"

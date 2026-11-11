@@ -13,7 +13,26 @@ O ecossistema é composto por serviços isolados comunicando-se via REST:
 - **Linguagem/Framework:** Python 3.13 com FastAPI
 - **Banco de Dados:** SQLite via SQLModel (bancos independentes por microsserviço)
 - **Padrões Adotados:** API Gateway, Saga Pattern (Orquestrada) e CQRS
-- **Infraestrutura:** Docker e Docker Compose
+- **Infraestrutura:**
+   1. CI/CD
+   - Git Flow (main, develop e feature/*).
+   - GitHub Actions para build e testes.
+   - Deploy automático no Render.
+   - Publicação das imagens no Docker Hub.
+   2. Ambientes
+   - DEV
+   - HOMOL
+   - Swagger habilitado em DEV e desabilitado em HOMOL.
+   3. Observabilidade
+   - Prometheus para coleta de métricas.
+   - Grafana para visualização.
+   - Métricas HTTP e consumo de memória.
+   4. Segurança
+   - Dependabot para atualização de dependências.
+   - GitHub Secrets para armazenar credenciais e tokens.
+   5. Versionamento
+
+- Explicar o Semantic Versioning (MAJOR.MINOR.PATCH).
 
 ## ⚙️ Como executar
 1. Clone o repositório: `git clone https://github.com/HenriqueKnaul/itineris.git`
