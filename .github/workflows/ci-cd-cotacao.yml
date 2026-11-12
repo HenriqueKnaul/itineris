@@ -30,7 +30,7 @@ jobs:
           pip install -r requirements.txt
           pytest --cov=app --cov-report=xml
 
-      - name: 4. Análise no SonarCloud (CI)
+      - name: 4. Análise no SonarCloud 
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
