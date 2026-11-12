@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      #Preparação do ambiente
+      #Preparação do ambiente teste 
       - name: Baixar o código
         uses: actions/checkout@v4
         with:
