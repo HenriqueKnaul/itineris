@@ -4,3 +4,4 @@ python-jose[cryptography]
 pytest
 pytest-cov
 httpx
+prometheus-fastapi-instrumentator
