@@ -25,7 +25,7 @@ jobs:
         with:
           python-version: '3.13'
 
-      - name: 3. Instalar dependências e rodar Testes (CI)
+      - name: 3. Instalar dependências e rodar Testes 
         run: |
           pip install -r requirements.txt
           pytest --cov=app --cov-report=xml
