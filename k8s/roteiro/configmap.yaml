@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: roteiro-config
+data:
+  AMBIENTE: "DEV"
+  COTACAO_SERVICE_URL: "http://cotacao-service:8003"
+  PYTHONUNBUFFERED: "1"

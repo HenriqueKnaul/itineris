@@ -3,6 +3,7 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from fastapi import FastAPI, Header, HTTPException
+from prometheus_fastapi_instrumentator import Instrumentator
 from jose import JWTError, jwt
 from pydantic import BaseModel
 
@@ -17,6 +18,8 @@ USUARIOS = {
 }
 
 app = FastAPI(title="Auth Service - Itineris")
+
+Instrumentator().instrument(app).expose(app)
 
 
 class LoginIn(BaseModel):

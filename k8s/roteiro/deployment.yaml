@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: roteiro-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: roteiro-service
+  template:
+    metadata:
+      labels:
+        app: roteiro-service
+    spec:
+      containers:
+        - name: roteiro-service
+          image: itineris-roteiro:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8002
+          envFrom:
+            - configMapRef:
+                name: roteiro-config
+            - secretRef:
+                name: roteiro-secret
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8002
+            initialDelaySeconds: 15
+            periodSeconds: 20
