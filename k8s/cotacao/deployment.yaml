@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cotacao-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cotacao-service
+  template:
+    metadata:
+      labels:
+        app: cotacao-service
+    spec:
+      containers:
+        - name: cotacao-service
+          image: henriqueknaul/itineris-cotacao:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8003
+          envFrom:
+            - configMapRef:
+                name: cotacao-config
+            - secretRef:
+                name: cotacao-secret
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8003
+            initialDelaySeconds: 15
+            periodSeconds: 20

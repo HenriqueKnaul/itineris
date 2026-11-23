@@ -1,0 +1,70 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gateway-config
+data:
+  default.conf: |
+    server {
+        listen 8000;
+
+        proxy_set_header Host $http_host;
+
+        location = /health {
+            default_type application/json;
+            return 200 '{"status":"healthy"}';
+        }
+
+        location = /health/auth    { proxy_pass http://auth-service:8001/health; }
+        location = /health/roteiro { proxy_pass http://roteiro-service:8002/health; }
+        location = /health/cotacao { proxy_pass http://cotacao-service:8003/health; }
+
+        location /auth/ {
+            proxy_pass http://auth-service:8001;
+        }
+
+        location /roteiros {
+            auth_request /validar_token;
+            proxy_pass http://roteiro-service:8002;
+        }
+
+        location /destinos {
+            auth_request /validar_token;
+            proxy_pass http://roteiro-service:8002;
+        }
+
+        location /cotacoes {
+            auth_request /validar_token;
+            proxy_pass http://cotacao-service:8003;
+        }
+
+        location /orcamentos {
+            auth_request /validar_token;
+            proxy_pass http://cotacao-service:8003;
+        }
+
+        location = /validar_token {
+            internal;
+            proxy_pass http://auth-service:8001/auth/validar;
+            proxy_method GET;
+            proxy_pass_request_body off;
+            proxy_set_header Content-Length "";
+        }
+
+        location / {
+            default_type application/json;
+            return 404 '{"erro":"rota_nao_mapeada","rotas_disponiveis":["/auth","/roteiros","/destinos","/cotacoes","/orcamentos"]}';
+        }
+
+        error_page 401 = @nao_autenticado;
+        error_page 502 503 504 = @servico_indisponivel;
+
+        location @nao_autenticado {
+            default_type application/json;
+            return 401 '{"erro":"nao_autenticado","mensagem":"Faça login em /auth/login e envie o header Authorization: Bearer <token>."}';
+        }
+
+        location @servico_indisponivel {
+            default_type application/json;
+            return 503 '{"erro":"servico_indisponivel","mensagem":"O microsserviço não está no ar."}';
+        }
+    }
